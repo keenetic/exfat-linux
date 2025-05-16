@@ -445,11 +445,10 @@ static int exfat_read_root(struct inode *inode)
 	inode->i_op = &exfat_dir_inode_operations;
 	inode->i_fop = &exfat_dir_operations;
 
-	inode->i_blocks = ((i_size_read(inode) + (sbi->cluster_size - 1))
-			& ~(sbi->cluster_size - 1)) >> inode->i_blkbits;
-	EXFAT_I(inode)->i_pos = ((loff_t)sbi->root_dir << 32) | 0xffffffff;
-	EXFAT_I(inode)->i_size_aligned = i_size_read(inode);
-	EXFAT_I(inode)->i_size_ondisk = i_size_read(inode);
+	inode->i_blocks = round_up(i_size_read(inode), sbi->cluster_size) >> 9;
+	ei->i_pos = ((loff_t)sbi->root_dir << 32) | 0xffffffff;
+	ei->i_size_aligned = i_size_read(inode);
+	ei->i_size_ondisk = i_size_read(inode);
 
 	exfat_save_attr(inode, ATTR_SUBDIR);
 	inode->i_mtime = inode->i_atime = inode->i_ctime =
@@ -463,8 +462,7 @@ static int exfat_calibrate_blocksize(struct super_block *sb, int logical_sect)
 {
 	struct exfat_sb_info *sbi = EXFAT_SB(sb);
 
-	if (!is_power_of_2(logical_sect) ||
-	    logical_sect < 512 || logical_sect > 4096) {
+	if (!is_power_of_2(logical_sect)) {
 		exfat_err(sb, "bogus logical sector size %u", logical_sect);
 		return -EIO;
 	}
@@ -812,6 +810,7 @@ static int exfat_init_sb_info(struct super_block *sb)
 		return -ENOMEM;
 
 	mutex_init(&sbi->s_lock);
+	mutex_init(&sbi->bitmap_lock);
 	ratelimit_state_init(&sbi->ratelimit, DEFAULT_RATELIMIT_INTERVAL,
 			DEFAULT_RATELIMIT_BURST);
 
