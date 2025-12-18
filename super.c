@@ -252,6 +252,7 @@ enum {
 	Opt_debug,
 	Opt_namecase,
 	Opt_codepage,
+	Opt_noatime
 };
 
 static const match_table_t exfat_tokens = {
@@ -274,6 +275,7 @@ static const match_table_t exfat_tokens = {
 	{Opt_debug, "debug"},
 	{Opt_namecase, "namecase=%u"},
 	{Opt_codepage, "codepage=%u"},
+	{Opt_noatime, "noatime"}
 };
 
 static int __exfat_parse_option(struct super_block *sb, char *p, substring_t *args, int token, int silent)
@@ -348,6 +350,8 @@ static int __exfat_parse_option(struct super_block *sb, char *p, substring_t *ar
 	case Opt_codepage:
 		if (!silent)
 			exfat_warn(sb, "deprecated mount option \"%s\" ", p);
+		break;
+	case Opt_noatime:
 		break;
 	default:
 		return -EINVAL;
